@@ -1,71 +1,99 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/maximhq/bifrost/core/schemas"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
+// supportedFormats lists the valid encoding_format values.
+var supportedFormats = map[string]bool{
+	"float":  true,
+	"base64": true,
+}
+
+// pluginConfig holds the parsed plugin configuration.
+type pluginConfig struct {
+	EncodingFormat string `json:"encoding_format"`
+}
+
+// activeConfig stores the plugin configuration after initialization.
+var activeConfig pluginConfig
+
+// Init parses the plugin configuration and validates the encoding_format value.
+// The config is expected to be a JSON object with an "encoding_format" field.
+// If no config is provided, the default encoding_format "float" is used.
 func Init(config any) error {
-	fmt.Println("Init called")
+	activeConfig.EncodingFormat = "float"
+
+	if config == nil {
+		fmt.Printf("[encoding-format] No config provided, using default encoding_format: %s\n", activeConfig.EncodingFormat)
+		return nil
+	}
+
+	cfgBytes, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("[encoding-format] failed to marshal config: %w", err)
+	}
+
+	if err := json.Unmarshal(cfgBytes, &activeConfig); err != nil {
+		return fmt.Errorf("[encoding-format] failed to parse config: %w", err)
+	}
+
+	if activeConfig.EncodingFormat == "" {
+		activeConfig.EncodingFormat = "float"
+	}
+
+	if !supportedFormats[activeConfig.EncodingFormat] {
+		return fmt.Errorf("[encoding-format] unsupported encoding_format: %s (supported: float, base64)", activeConfig.EncodingFormat)
+	}
+
+	fmt.Printf("[encoding-format] Initialized with encoding_format: %s\n", activeConfig.EncodingFormat)
 	return nil
 }
 
-// GetName returns the name of the plugin (required)
-// This is the system identifier - not editable by users
-// Users can set a custom display_name in the config for the UI
+// GetName returns the system identifier for this plugin (required).
 func GetName() string {
-	return "hello-world"
+	return "encoding-format"
 }
 
+// HTTPTransportPreHook intercepts HTTP requests before they are sent to the
+// downstream provider. For embedding requests that are missing the
+// encoding_format parameter (or have it set to null), it injects the
+// configured encoding_format value into the request body.
 func HTTPTransportPreHook(ctx *schemas.BifrostContext, req *schemas.HTTPRequest) (*schemas.HTTPResponse, error) {
-	fmt.Println("HTTPTransportPreHook called")
-	// Modify request in-place
-	req.Headers["x-hello-world-plugin"] = "transport-pre-hook-value"
-	// Store value in context for PreLLMHook/PostLLMHook
-	ctx.SetValue(schemas.BifrostContextKey("hello-world-plugin-transport-pre-hook"), "transport-pre-hook-value")	
-	// Return nil to continue processing, or return &schemas.HTTPResponse{} to short-circuit
+	if !isEmbeddingRequest(req) {
+		return nil, nil
+	}
+
+	if len(req.Body) == 0 {
+		return nil, nil
+	}
+
+	result := gjson.GetBytes(req.Body, "encoding_format")
+	if result.Exists() && result.Type != gjson.Null {
+		return nil, nil
+	}
+
+	newBody, err := sjson.SetBytes(req.Body, "encoding_format", activeConfig.EncodingFormat)
+	if err != nil {
+		return nil, fmt.Errorf("[encoding-format] failed to set encoding_format in request body: %w", err)
+	}
+
+	req.Body = newBody
 	return nil, nil
 }
 
-func HTTPTransportPostHook(ctx *schemas.BifrostContext, req *schemas.HTTPRequest, resp *schemas.HTTPResponse) error {
-	fmt.Println("HTTPTransportPostHook called")
-	// Modify response in-place
-	resp.Headers["x-hello-world-plugin"] = "transport-post-hook-value"
-	// Store value in context
-	ctx.SetValue(schemas.BifrostContextKey("hello-world-plugin-transport-post-hook"), "transport-post-hook-value")
-	// Return nil to continue processing
-	return nil
+// isEmbeddingRequest checks whether the HTTP request targets an embedding endpoint.
+func isEmbeddingRequest(req *schemas.HTTPRequest) bool {
+	return strings.Contains(strings.ToLower(req.Path), "embedding")
 }
 
-func HTTPTransportStreamChunkHook(ctx *schemas.BifrostContext, req *schemas.HTTPRequest, chunk *schemas.BifrostStreamChunk) (*schemas.BifrostStreamChunk, error) {
-	fmt.Println("HTTPTransportStreamChunkHook called")
-	// Modify chunk in-place
-	if chunk.BifrostChatResponse != nil && chunk.BifrostChatResponse.Choices != nil && len(chunk.BifrostChatResponse.Choices) > 0 && chunk.BifrostChatResponse.Choices[0].ChatStreamResponseChoice != nil && chunk.BifrostChatResponse.Choices[0].ChatStreamResponseChoice.Delta != nil && chunk.BifrostChatResponse.Choices[0].ChatStreamResponseChoice.Delta.Content != nil {
-		*chunk.BifrostChatResponse.Choices[0].ChatStreamResponseChoice.Delta.Content += " - modified by hello-world-plugin"
-	}
-	// Return the modified chunk
-	return chunk, nil
-}
-
-func PreLLMHook(ctx *schemas.BifrostContext, req *schemas.BifrostRequest) (*schemas.BifrostRequest, *schemas.LLMPluginShortCircuit, error) {
-	value1 := ctx.Value(schemas.BifrostContextKey("hello-world-plugin-transport-pre-hook"))
-	fmt.Println("value1:", value1)
-	ctx.SetValue(schemas.BifrostContextKey("hello-world-plugin-pre-hook"), "pre-hook-value")
-	fmt.Println("PreLLMHook called")
-	return req, nil, nil
-}
-
-func PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bifrostErr *schemas.BifrostError) (*schemas.BifrostResponse, *schemas.BifrostError, error) {
-	fmt.Println("PostLLMHook called")
-	value1 := ctx.Value(schemas.BifrostContextKey("hello-world-plugin-transport-pre-hook"))
-	fmt.Println("value1:", value1)
-	value2 := ctx.Value(schemas.BifrostContextKey("hello-world-plugin-pre-hook"))
-	fmt.Println("value2:", value2)
-	return resp, bifrostErr, nil
-}
-
+// Cleanup performs any necessary teardown when the plugin is unloaded.
 func Cleanup() error {
-	fmt.Println("Cleanup called")
 	return nil
 }

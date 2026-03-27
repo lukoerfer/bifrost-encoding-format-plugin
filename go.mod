@@ -1,8 +1,12 @@
-module github.com/maximhq/bifrost/examples/plugins/hello-world
+module github.com/lukoerfer/bifrost-encoding-format-plugin
 
 go 1.26.1
 
-require github.com/maximhq/bifrost/core v1.4.14
+require (
+	github.com/maximhq/bifrost/core v1.4.14
+	github.com/tidwall/gjson v1.18.0
+	github.com/tidwall/sjson v1.2.5
+)
 
 require (
 	github.com/andybalholm/brotli v1.2.0 // indirect
@@ -20,10 +24,8 @@ require (
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/mark3labs/mcp-go v0.43.2 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
-	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.68.0 // indirect

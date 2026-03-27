@@ -15,7 +15,7 @@ COLOR_ERROR   = \033[31m
 COLOR_BOLD    = \033[1m
 
 # Plugin name
-PLUGIN_NAME = hello-world
+PLUGIN_NAME = encoding-format
 OUTPUT_DIR = build
 
 # Platform detection
