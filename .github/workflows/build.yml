@@ -30,7 +30,18 @@ jobs:
         run: make test
 
       - name: Build plugin (Linux AMD64)
-        run: make build GOOS=linux GOARCH=amd64
+        run: |
+          mkdir -p build
+          docker run --rm \
+            --platform linux/amd64 \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            -e CGO_ENABLED=1 \
+            -e GOOS=linux \
+            -e GOARCH=amd64 \
+            golang:1.26.1-alpine3.23 \
+            sh -c "apk add --no-cache gcc musl-dev && \
+              go build -buildmode=plugin -ldflags='-w -s' -trimpath -o build/encoding-format.so main.go"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
