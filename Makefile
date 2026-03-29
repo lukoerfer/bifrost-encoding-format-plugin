@@ -117,7 +117,7 @@ dev: _clean_build_dir ## Build the plugin for development (no optimization flags
 	CGO_ENABLED=1 go build -buildmode=plugin -o $(OUTPUT) main.go
 	@echo "$(COLOR_SUCCESS)✓ Plugin built successfully: $(OUTPUT)$(COLOR_RESET)"
 
-_build-with-docker: # Internal target for Docker-based builds (uses Alpine to match Bifrost's build environment)
+_build-with-docker: # Internal target for Docker-based builds (uses bookworm to match Bifrost's build environment)
 	@if [ "$(TARGET_OS)" = "linux" ]; then \
 		echo "$(COLOR_INFO)Building for $(TARGET_OS)/$(TARGET_ARCH) in Docker container...$(COLOR_RESET)"; \
 		docker run --rm \
@@ -127,8 +127,8 @@ _build-with-docker: # Internal target for Docker-based builds (uses Alpine to ma
 			-e CGO_ENABLED=1 \
 			-e GOOS=$(TARGET_OS) \
 			-e GOARCH=$(TARGET_ARCH) \
-			golang:1.26.1-alpine3.23 \
-			sh -c "apk add --no-cache gcc musl-dev && \
+			golang:1.26.1-bookworm \
+			sh -c "apt-get update && apt-get install -y gcc libc6-dev && \
 				go build -buildmode=plugin -ldflags='-w -s' -trimpath -o $(OUTPUT) main.go"; \
 		echo "$(COLOR_SUCCESS)✓ Plugin built successfully: $(OUTPUT) ($(TARGET_OS)/$(TARGET_ARCH))$(COLOR_RESET)"; \
 	else \
