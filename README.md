@@ -2,6 +2,9 @@
 
 A [Bifrost](https://github.com/maximhq/bifrost) plugin that injects missing `encoding_format` parameters into embedding API requests.
 
+> [!WARNING]
+> This code in this project was **fully** generated using large language models (LLMs) in an approach called [vibe coding](https://en.wikipedia.org/wiki/Vibe_coding). The reason for taking this approach is that it allowed us to quickly resolve the problem described below, even though we had no experience with Go, which would be required when using a regular software development approach. You should **not rely** on this project for any critical tasks or use it for production setups of Bifrost.
+
 ## Problem
 
 Some downstream LLM providers (e.g. older versions of LiteLLM) require the `encoding_format` parameter in embedding requests, but many upstream platforms like Open WebUI don't include it. This mismatch results in errors. This plugin bridges that gap by automatically adding the parameter when it's missing.
@@ -15,9 +18,18 @@ The plugin intercepts HTTP requests at the transport level before they reach the
 3. If `encoding_format` is **already set** to a non-null value → leaves the request unchanged
 4. Non-embedding requests are passed through without modification
 
-## Configuration
+## Installation
 
-Add the plugin to your Bifrost configuration:
+> [!IMPORTANT]
+> Plugins require dynamic builds of Bifrost which are not enabled by default to keep Bifrost setup easier. You need to [build a dynamically linked Bifrost binary](https://docs.getbifrost.ai/plugins/building-dynamic-binary) to use this plugin.
+
+You may install the plugin using two different approaches:
+
+### Via the user interface
+
+### Via the configuration file
+
+Download the plugin and add it to your Bifrost configuration:
 
 ```yaml
 plugins:
@@ -28,59 +40,7 @@ plugins:
       encoding_format: "float"  # or "base64"
 ```
 
-### Supported Values
-
-| Value    | Description                        |
-|----------|------------------------------------|
-| `float`  | Return embeddings as float arrays (default) |
-| `base64` | Return embeddings as base64-encoded strings |
-
-If no configuration is provided, the plugin defaults to `float`.
-
-## Building
-
-### Prerequisites
-
-- Go 1.26.1+
-- CGO enabled (required for Go plugins)
-
-### Build locally
-
-```bash
-make build
-```
-
-### Build for Linux AMD64 (cross-compilation via Docker)
-
-```bash
-make build GOOS=linux GOARCH=amd64
-```
-
-### Install to Bifrost plugins directory
-
-```bash
-make install
-```
-
-## GitHub Actions
-
-The repository includes a GitHub Actions workflow that:
-
-- **On push/PR to main**: Builds and tests the plugin on Linux AMD64
-- **On tag push (`v*`)**: Builds the plugin and publishes it as a GitHub Release asset
-
-## Development
-
-```bash
-# Download dependencies
-make deps
-
-# Build for development (no optimizations)
-make dev
-
-# Run tests
-make test
-```
+If no `config` is provided, the plugin defaults to `float`.
 
 ## License
 
