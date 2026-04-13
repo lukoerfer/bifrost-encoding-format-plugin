@@ -1,9 +1,9 @@
 module github.com/lukoerfer/bifrost-encoding-format-plugin
 
-go 1.26.1
+go 1.26.2
 
 require (
-	github.com/maximhq/bifrost/core v1.4.14
+	github.com/maximhq/bifrost/core v1.4.19
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 )

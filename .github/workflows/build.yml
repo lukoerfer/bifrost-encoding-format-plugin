@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.1'
+          go-version: '1.26.2'
 
       - name: Download dependencies
         run: make deps
@@ -39,7 +39,7 @@ jobs:
             -e CGO_ENABLED=1 \
             -e GOOS=linux \
             -e GOARCH=amd64 \
-            golang:1.26.1-bookworm \
+            golang:1.26.2-bookworm \
             sh -c "apt-get update && apt-get install -y gcc && \
               go build -buildmode=plugin -ldflags='-w -s' -trimpath -o build/encoding-format.so main.go"
 

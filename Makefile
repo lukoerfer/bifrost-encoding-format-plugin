@@ -127,7 +127,7 @@ _build-with-docker: # Internal target for Docker-based builds (uses bookworm to 
 			-e CGO_ENABLED=1 \
 			-e GOOS=$(TARGET_OS) \
 			-e GOARCH=$(TARGET_ARCH) \
-			golang:1.26.1-bookworm \
+			golang:1.26.2-bookworm \
 			sh -c "apt-get update && apt-get install -y gcc && \
 				go build -buildmode=plugin -ldflags='-w -s' -trimpath -o $(OUTPUT) main.go"; \
 		echo "$(COLOR_SUCCESS)✓ Plugin built successfully: $(OUTPUT) ($(TARGET_OS)/$(TARGET_ARCH))$(COLOR_RESET)"; \
